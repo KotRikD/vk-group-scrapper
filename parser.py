@@ -5,6 +5,7 @@ import re
 from urllib.parse import unquote
 import os
 import shutil
+import progressbar
 
 reg_ex = r'[\w-]+.(jpg|png|txt)'
 
@@ -50,18 +51,26 @@ def calculate(count):
     return count_array
 
 def download_images(name, links):
-    print(f"Start downloading {len(links)} images. Wait plz!")
+    print(f"Start downloading {len(links)} images. Wait plz!\n")
+    bar = progressbar.ProgressBar(maxval=len(links), widgets=[
+        f'Downloading {len(links)} images: ',
+        progressbar.Bar(marker='#', left='[', right=']', fill='.'),
+        progressbar.Percentage(),
+    ]).start()
+    
     if not os.path.exists(f"output/"):
         os.makedirs(f"output/")
 
+    l = 0
     for url in links:
+        l+=1
+        bar.update(l)
         result = re.search(reg_ex, url)
         if result:
             g = result.group(0)
         else:
             continue
 
-        print(f"Downloading {g}")
         img_bytes = requests.get(url, stream=True)
         try:
             if not os.path.exists(f"output/{name}/"):
@@ -72,7 +81,8 @@ def download_images(name, links):
                 shutil.copyfileobj(img_bytes.raw, f) 
         except Exception as e:
             print(f"ERROR: {e}")
-
+    
+    bar.finish()
 
 def parse_images_from_post(posts):
     links = []
